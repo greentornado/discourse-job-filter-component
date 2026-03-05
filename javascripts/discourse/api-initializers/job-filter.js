@@ -81,6 +81,27 @@ const CITIES = [
   "can-tho",
 ];
 
+function injectStyles() {
+  if (document.getElementById("ub-job-filter-style")) return;
+  const style = document.createElement("style");
+  style.id = "ub-job-filter-style";
+  style.textContent = [
+    "#ub-job-filter-panel { margin-bottom:15px; padding:12px 15px; background:var(--secondary); border:1px solid var(--primary-low); border-radius:6px; }",
+    ".ub-job-filter-desc { font-size:0.9em; color:var(--primary-medium); margin-bottom:10px; }",
+    ".ub-job-filter-row { display:flex !important; flex-direction:row !important; flex-wrap:nowrap !important; gap:12px; align-items:center; }",
+    ".ub-job-filter-field { display:inline-flex !important; align-items:center; gap:6px; flex:1; }",
+    ".ub-job-filter-field label { font-size:0.85em; font-weight:600; color:var(--primary-medium); white-space:nowrap; margin:0; }",
+    ".ub-job-filter-field select { flex:1; min-width:0; padding:6px 10px; border:1px solid var(--primary-low); border-radius:4px; background:var(--secondary); color:var(--primary); font-size:0.9em; cursor:pointer; }",
+    ".ub-job-filter-field select:focus { border-color:var(--tertiary); outline:none; }",
+    ".ub-job-filter-actions { display:inline-flex !important; gap:6px; align-items:center; flex-shrink:0; }",
+    ".ub-job-filter-actions .btn { min-width:70px; }",
+    ".ub-job-filter-status { margin-top:8px; font-size:0.85em; color:var(--tertiary); font-weight:500; }",
+    ".ub-job-filter-status:empty { display:none; }",
+    "@media(max-width:600px) { .ub-job-filter-row { flex-direction:column !important; flex-wrap:wrap !important; gap:8px; } .ub-job-filter-field { width:100%; } .ub-job-filter-actions { width:100%; } .ub-job-filter-actions .btn { flex:1; } }",
+  ].join("\n");
+  document.head.appendChild(style);
+}
+
 function buildFilterPanel() {
   const panel = document.createElement("div");
   panel.id = "ub-job-filter-panel";
@@ -263,6 +284,7 @@ export default apiInitializer("1.0", (api) => {
         document.querySelector(".contents");
       if (!target) return;
 
+      injectStyles();
       const panel = buildFilterPanel();
       target.parentNode.insertBefore(panel, target);
       populateDropdowns();
