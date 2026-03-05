@@ -2,7 +2,7 @@
  * UB Job Filter — Filter panel for tin-tuyen-dung category
  *
  * Adds two dropdown filters (Bank + Location) above the topic list
- * when viewing the tin-tuyen-dung category or tag intersection pages.
+ * when viewing the tin-tuyen-dung category or tag pages.
  * Uses Discourse Tag Groups populated via setup_forum_tags.py.
  */
 
@@ -70,6 +70,8 @@ const LOCATION_DISPLAY = {
   "an-giang": "An Giang",
 };
 
+const ALL_TAGS = Object.assign({}, BANK_DISPLAY, LOCATION_DISPLAY);
+
 const CITIES = [
   "ha-noi",
   "ho-chi-minh",
@@ -86,6 +88,13 @@ function buildFilterPanel() {
   const container = document.createElement("div");
   container.className = "ub-job-filter-container";
 
+  // Description line
+  const desc = document.createElement("div");
+  desc.className = "ub-job-filter-desc";
+  desc.textContent =
+    "B\u1ea1n c\u00f3 th\u1ec3 l\u1ecdc tin tuy\u1ec3n d\u1ee5ng theo ng\u00e2n h\u00e0ng v\u00e0 \u0111\u1ecba \u0111i\u1ec3m";
+  container.appendChild(desc);
+
   const row = document.createElement("div");
   row.className = "ub-job-filter-row";
 
@@ -99,7 +108,7 @@ function buildFilterPanel() {
   bankSelect.id = "ub-filter-bank";
   const bankDefault = document.createElement("option");
   bankDefault.value = "";
-  bankDefault.textContent = "— T\u1ea5t c\u1ea3 —";
+  bankDefault.textContent = "\u2014 T\u1ea5t c\u1ea3 \u2014";
   bankSelect.appendChild(bankDefault);
   bankField.appendChild(bankLabel);
   bankField.appendChild(bankSelect);
@@ -114,7 +123,7 @@ function buildFilterPanel() {
   locSelect.id = "ub-filter-location";
   const locDefault = document.createElement("option");
   locDefault.value = "";
-  locDefault.textContent = "— T\u1ea5t c\u1ea3 —";
+  locDefault.textContent = "\u2014 T\u1ea5t c\u1ea3 \u2014";
   locSelect.appendChild(locDefault);
   locField.appendChild(locLabel);
   locField.appendChild(locSelect);
@@ -188,16 +197,24 @@ function populateDropdowns() {
   });
   locationSelect.appendChild(provGroup);
 
-  const tagMatch = window.location.pathname.match(
-    /\/tags\/intersection\/(.+)/
-  );
-  if (tagMatch) {
-    const tags = tagMatch[1].split("/");
-    tags.forEach((tag) => {
-      if (BANK_DISPLAY[tag]) bankSelect.value = tag;
-      if (LOCATION_DISPLAY[tag]) locationSelect.value = tag;
-    });
+  // Restore selection from URL — handle both /tag/ and /tags/intersection/
+  const path = window.location.pathname;
+  let activeTags = [];
+
+  const intersectionMatch = path.match(/\/tags\/intersection\/(.+)/);
+  if (intersectionMatch) {
+    activeTags = intersectionMatch[1].split("/");
+  } else {
+    const singleMatch = path.match(/\/tag\/([^/]+)/);
+    if (singleMatch) {
+      activeTags = [singleMatch[1]];
+    }
   }
+
+  activeTags.forEach((tag) => {
+    if (BANK_DISPLAY[tag]) bankSelect.value = tag;
+    if (LOCATION_DISPLAY[tag]) locationSelect.value = tag;
+  });
 }
 
 function applyFilter() {
@@ -210,6 +227,8 @@ function applyFilter() {
 
   if (tags.length === 0) {
     window.location.href = "/c/tin-tuyen-dung/" + CATEGORY_ID;
+  } else if (tags.length === 1) {
+    window.location.href = "/tag/" + tags[0];
   } else {
     window.location.href = "/tags/intersection/" + tags.join("/");
   }
@@ -226,8 +245,16 @@ export default apiInitializer("1.0", (api) => {
 
     const isCategoryPage = url.includes("/c/tin-tuyen-dung/");
     const isTagIntersection = url.includes("/tags/intersection/");
+    const isSingleTag = /\/tag\/([^/]+)/.test(url);
 
-    if (!isCategoryPage && !isTagIntersection) return;
+    // Only show on relevant pages
+    if (!isCategoryPage && !isTagIntersection && !isSingleTag) return;
+
+    // For single tag pages, only show if the tag is one of ours
+    if (isSingleTag && !isTagIntersection && !isCategoryPage) {
+      const tagMatch = url.match(/\/tag\/([^/]+)/);
+      if (tagMatch && !ALL_TAGS[tagMatch[1]]) return;
+    }
 
     setTimeout(() => {
       const target =
@@ -253,15 +280,23 @@ export default apiInitializer("1.0", (api) => {
         });
       });
 
+      // Show active filter status
       const statusEl = document.getElementById("ub-filter-status");
-      if (isTagIntersection && statusEl) {
-        const tagMatch = url.match(/\/tags\/intersection\/(.+)/);
-        if (tagMatch) {
-          const parts = tagMatch[1].split("/");
-          const labels = parts.map(
+      if ((isTagIntersection || isSingleTag) && statusEl) {
+        let activeTags = [];
+        const intMatch = url.match(/\/tags\/intersection\/(.+)/);
+        if (intMatch) {
+          activeTags = intMatch[1].split("/");
+        } else {
+          const singleMatch = url.match(/\/tag\/([^/]+)/);
+          if (singleMatch) activeTags = [singleMatch[1]];
+        }
+        if (activeTags.length > 0) {
+          const labels = activeTags.map(
             (t) => BANK_DISPLAY[t] || LOCATION_DISPLAY[t] || t
           );
-          statusEl.textContent = "\u0110ang l\u1ecdc: " + labels.join(" + ");
+          statusEl.textContent =
+            "\u0110ang l\u1ecdc: " + labels.join(" + ");
         }
       }
     }, 500);
