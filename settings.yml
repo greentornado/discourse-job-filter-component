@@ -1,0 +1,19 @@
+ub_job_filter_enabled:
+  default: true
+  type: bool
+  description: "Enable/disable job filter panel on tin-tuyen-dung category"
+
+ub_job_filter_category_id:
+  default: 5
+  type: integer
+  description: "Category ID to show filter panel (tin-tuyen-dung = 5)"
+
+ub_job_filter_bank_group:
+  default: "Ngân hàng"
+  type: string
+  description: "Tag group name for banks"
+
+ub_job_filter_location_group:
+  default: "Địa điểm"
+  type: string
+  description: "Tag group name for locations"

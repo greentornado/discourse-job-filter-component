@@ -1,0 +1,7 @@
+{
+  "name": "UB Job Filter",
+  "about_url": "https://ub.com.vn",
+  "license_url": "https://opensource.org/licenses/MIT",
+  "component": true,
+  "minimum_discourse_version": "3.0.0"
+}

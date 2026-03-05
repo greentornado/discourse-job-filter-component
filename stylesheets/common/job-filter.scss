@@ -1,0 +1,97 @@
+// UB Job Filter — Styles for the filter panel
+
+#ub-job-filter-panel {
+  margin-bottom: 15px;
+  padding: 12px 15px;
+  background: var(--secondary);
+  border: 1px solid var(--primary-low);
+  border-radius: 6px;
+}
+
+.ub-job-filter-container {
+  max-width: 100%;
+}
+
+.ub-job-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.ub-job-filter-field {
+  flex: 1;
+  min-width: 180px;
+
+  label {
+    display: block;
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--primary-medium);
+    margin-bottom: 4px;
+  }
+
+  select {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--primary-low);
+    border-radius: 4px;
+    background: var(--secondary);
+    color: var(--primary);
+    font-size: 0.9em;
+    cursor: pointer;
+
+    &:focus {
+      border-color: var(--tertiary);
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(var(--tertiary-rgb, 0, 0, 0), 0.2);
+    }
+
+    optgroup {
+      font-weight: 600;
+      color: var(--primary-high);
+    }
+  }
+}
+
+.ub-job-filter-actions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  padding-bottom: 1px;
+
+  .btn {
+    min-width: 70px;
+  }
+}
+
+.ub-job-filter-status {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: var(--tertiary);
+  font-weight: 500;
+
+  &:empty {
+    display: none;
+  }
+}
+
+// Mobile responsive
+@media (max-width: 600px) {
+  .ub-job-filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ub-job-filter-field {
+    min-width: 100%;
+  }
+
+  .ub-job-filter-actions {
+    width: 100%;
+
+    .btn {
+      flex: 1;
+    }
+  }
+}

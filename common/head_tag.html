@@ -1,0 +1,258 @@
+<script type="text/discourse-plugin" version="1.0">
+/**
+ * UB Job Filter — Filter panel for tin-tuyen-dung category
+ *
+ * Adds two dropdown filters (Bank + Location) above the topic list
+ * when viewing category ID = settings.ub_job_filter_category_id.
+ * Uses Discourse Tag Groups populated via setup_forum_tags.py.
+ */
+
+const CATEGORY_ID = parseInt(settings.ub_job_filter_category_id) || 5;
+
+// Display names for tags
+const BANK_DISPLAY = {
+  "vietcombank": "Vietcombank",
+  "bidv": "BIDV",
+  "vietinbank": "VietinBank",
+  "agribank": "Agribank",
+  "techcombank": "Techcombank",
+  "mbbank": "MB Bank",
+  "vpbank": "VPBank",
+  "acb": "ACB",
+  "sacombank": "Sacombank",
+  "hdbank": "HDBank",
+  "tpbank": "TPBank",
+  "shb": "SHB",
+  "msb": "MSB",
+  "vib": "VIB",
+  "lpbank": "LPBank",
+  "ocb": "OCB",
+  "seabank": "SeABank",
+  "eximbank": "Eximbank",
+  "namabank": "Nam A Bank",
+  "baovietbank": "BaoViet Bank",
+};
+
+const LOCATION_DISPLAY = {
+  "ha-noi": "Hà Nội",
+  "ho-chi-minh": "TP.HCM",
+  "hai-phong": "Hải Phòng",
+  "da-nang": "Đà Nẵng",
+  "hue": "Huế",
+  "can-tho": "Cần Thơ",
+  "lai-chau": "Lai Châu",
+  "dien-bien": "Điện Biên",
+  "son-la": "Sơn La",
+  "lang-son": "Lạng Sơn",
+  "cao-bang": "Cao Bằng",
+  "tuyen-quang": "Tuyên Quang",
+  "lao-cai": "Lào Cai",
+  "thai-nguyen": "Thái Nguyên",
+  "phu-tho": "Phú Thọ",
+  "bac-ninh": "Bắc Ninh",
+  "hung-yen": "Hưng Yên",
+  "ninh-binh": "Ninh Bình",
+  "quang-ninh": "Quảng Ninh",
+  "thanh-hoa": "Thanh Hóa",
+  "nghe-an": "Nghệ An",
+  "ha-tinh": "Hà Tĩnh",
+  "quang-tri": "Quảng Trị",
+  "quang-ngai": "Quảng Ngãi",
+  "gia-lai": "Gia Lai",
+  "khanh-hoa": "Khánh Hòa",
+  "lam-dong": "Lâm Đồng",
+  "dak-lak": "Đắk Lắk",
+  "dong-nai": "Đồng Nai",
+  "tay-ninh": "Tây Ninh",
+  "vinh-long": "Vĩnh Long",
+  "dong-thap": "Đồng Tháp",
+  "ca-mau": "Cà Mau",
+  "an-giang": "An Giang",
+};
+
+const CITIES = ["ha-noi", "ho-chi-minh", "hai-phong", "da-nang", "hue", "can-tho"];
+
+// Build filter panel using safe DOM methods
+function buildFilterPanel() {
+  const panel = document.createElement("div");
+  panel.id = "ub-job-filter-panel";
+
+  const container = document.createElement("div");
+  container.className = "ub-job-filter-container";
+
+  const row = document.createElement("div");
+  row.className = "ub-job-filter-row";
+
+  // Bank filter
+  const bankField = document.createElement("div");
+  bankField.className = "ub-job-filter-field";
+  const bankLabel = document.createElement("label");
+  bankLabel.setAttribute("for", "ub-filter-bank");
+  bankLabel.textContent = "Ngân hàng";
+  const bankSelect = document.createElement("select");
+  bankSelect.id = "ub-filter-bank";
+  const bankDefault = document.createElement("option");
+  bankDefault.value = "";
+  bankDefault.textContent = "— Tất cả —";
+  bankSelect.appendChild(bankDefault);
+  bankField.appendChild(bankLabel);
+  bankField.appendChild(bankSelect);
+
+  // Location filter
+  const locField = document.createElement("div");
+  locField.className = "ub-job-filter-field";
+  const locLabel = document.createElement("label");
+  locLabel.setAttribute("for", "ub-filter-location");
+  locLabel.textContent = "Địa điểm";
+  const locSelect = document.createElement("select");
+  locSelect.id = "ub-filter-location";
+  const locDefault = document.createElement("option");
+  locDefault.value = "";
+  locDefault.textContent = "— Tất cả —";
+  locSelect.appendChild(locDefault);
+  locField.appendChild(locLabel);
+  locField.appendChild(locSelect);
+
+  // Action buttons
+  const actions = document.createElement("div");
+  actions.className = "ub-job-filter-actions";
+  const applyBtn = document.createElement("button");
+  applyBtn.id = "ub-filter-apply";
+  applyBtn.className = "btn btn-primary";
+  applyBtn.textContent = "Lọc";
+  const resetBtn = document.createElement("button");
+  resetBtn.id = "ub-filter-reset";
+  resetBtn.className = "btn btn-default";
+  resetBtn.textContent = "Bỏ lọc";
+  actions.appendChild(applyBtn);
+  actions.appendChild(resetBtn);
+
+  row.appendChild(bankField);
+  row.appendChild(locField);
+  row.appendChild(actions);
+  container.appendChild(row);
+
+  // Status line
+  const status = document.createElement("div");
+  status.id = "ub-filter-status";
+  status.className = "ub-job-filter-status";
+  container.appendChild(status);
+
+  panel.appendChild(container);
+  return panel;
+}
+
+// Populate dropdowns
+function populateDropdowns() {
+  const bankSelect = document.getElementById("ub-filter-bank");
+  const locationSelect = document.getElementById("ub-filter-location");
+  if (!bankSelect || !locationSelect) return;
+
+  // Banks sorted by name
+  Object.entries(BANK_DISPLAY)
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .forEach(([slug, name]) => {
+      const opt = document.createElement("option");
+      opt.value = slug;
+      opt.textContent = name;
+      bankSelect.appendChild(opt);
+    });
+
+  // Locations — cities first, then provinces
+  const cityGroup = document.createElement("optgroup");
+  cityGroup.label = "Thành phố trực thuộc TW";
+  CITIES.forEach(slug => {
+    const opt = document.createElement("option");
+    opt.value = slug;
+    opt.textContent = LOCATION_DISPLAY[slug];
+    cityGroup.appendChild(opt);
+  });
+  locationSelect.appendChild(cityGroup);
+
+  const provinces = Object.keys(LOCATION_DISPLAY).filter(k => !CITIES.includes(k));
+  provinces.sort((a, b) => LOCATION_DISPLAY[a].localeCompare(LOCATION_DISPLAY[b]));
+  const provGroup = document.createElement("optgroup");
+  provGroup.label = "Tỉnh";
+  provinces.forEach(slug => {
+    const opt = document.createElement("option");
+    opt.value = slug;
+    opt.textContent = LOCATION_DISPLAY[slug];
+    provGroup.appendChild(opt);
+  });
+  locationSelect.appendChild(provGroup);
+
+  // Restore current selection from URL
+  const tagMatch = window.location.pathname.match(/\/tags\/intersection\/(.+)/);
+  if (tagMatch) {
+    const tags = tagMatch[1].split("/");
+    tags.forEach(tag => {
+      if (BANK_DISPLAY[tag]) bankSelect.value = tag;
+      if (LOCATION_DISPLAY[tag]) locationSelect.value = tag;
+    });
+  }
+}
+
+// Apply filter — navigate to tag intersection URL
+function applyFilter() {
+  const bank = document.getElementById("ub-filter-bank")?.value;
+  const location = document.getElementById("ub-filter-location")?.value;
+
+  const tags = [];
+  if (bank) tags.push(bank);
+  if (location) tags.push(location);
+
+  if (tags.length === 0) {
+    window.location.href = "/c/tin-tuyen-dung/" + CATEGORY_ID;
+  } else {
+    window.location.href = "/tags/intersection/" + tags.join("/");
+  }
+}
+
+function resetFilter() {
+  window.location.href = "/c/tin-tuyen-dung/" + CATEGORY_ID;
+}
+
+// Inject panel on page navigation
+api.onPageChange((url) => {
+  const existing = document.getElementById("ub-job-filter-panel");
+  if (existing) existing.remove();
+
+  const isCategoryPage = url.includes("/c/tin-tuyen-dung/") ||
+                          url.includes("/c/tin-tuyen-dung/" + CATEGORY_ID);
+  const isTagIntersection = url.includes("/tags/intersection/");
+
+  if (!isCategoryPage && !isTagIntersection) return;
+  if (!settings.ub_job_filter_enabled) return;
+
+  setTimeout(() => {
+    const target = document.querySelector(".list-controls") ||
+                   document.querySelector("#list-area") ||
+                   document.querySelector(".contents");
+    if (!target) return;
+
+    const panel = buildFilterPanel();
+    target.parentNode.insertBefore(panel, target);
+    populateDropdowns();
+
+    document.getElementById("ub-filter-apply")?.addEventListener("click", applyFilter);
+    document.getElementById("ub-filter-reset")?.addEventListener("click", resetFilter);
+
+    ["ub-filter-bank", "ub-filter-location"].forEach(id => {
+      document.getElementById(id)?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") applyFilter();
+      });
+    });
+
+    // Show active filter status
+    const statusEl = document.getElementById("ub-filter-status");
+    if (isTagIntersection && statusEl) {
+      const tagMatch = url.match(/\/tags\/intersection\/(.+)/);
+      if (tagMatch) {
+        const parts = tagMatch[1].split("/");
+        const labels = parts.map(t => BANK_DISPLAY[t] || LOCATION_DISPLAY[t] || t);
+        statusEl.textContent = "Đang lọc: " + labels.join(" + ");
+      }
+    }
+  }, 500);
+});
+</script>
